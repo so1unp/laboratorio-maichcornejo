@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
       longitud++;
       if (longitud> max_long){
 	longitud=0;	
-      while ((c==getchar())!= ' ' && c!= '\n' && c!='\t' && c!=EOF);
+        while ((c==getchar())!= ' ' && c!= '\n' && c!='\t' && c!=EOF);
       }
     }
   }
