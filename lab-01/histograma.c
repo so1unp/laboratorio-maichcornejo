@@ -7,14 +7,17 @@ int main(int argc, char *argv[]) {
   char c;
   int i, j;
   int longitud = 0;
-  int contador[max_long + 1] = {0};
+  int contador[max_long + 1] = {0}; 
 
+  //Lee y cuenta los caracteres 
   while ((c = getchar()) != EOF) {
-    if (c == ' ' || c == '\n' || c == '\t') {
+    //comprueba si es el final de una palabra
+    if (c == ' ' || c == '\n' || c == '\t') { 
+        //comprueba que la palabra este en un rango valido
 	if(longitud>0 && longitud <= max_long){
       	  contador[longitud]++;
 	}
-	longitud=0;
+	longitud=0; //se reinicia para la prox palabra
     } else {
       longitud++;
       if (longitud> max_long){
