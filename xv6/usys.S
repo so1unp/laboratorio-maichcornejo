@@ -31,3 +31,6 @@ SYSCALL(sleep)
 SYSCALL(uptime)
 SYSCALL(trace)
 SYSCALL(answer)
+SYSCALL(getppid)
+SYSCALL(pscnt)
+
