@@ -18,6 +18,7 @@ struct thread {
 typedef struct thread thread_t, *thread_p;
 
 static thread_t all_thread[MAX_THREAD];
+static int current_thread_index;
 
 thread_p  current_thread;
 thread_p  next_thread;
@@ -35,38 +36,46 @@ thread_init(void)
   // a RUNNABLE thread.
   current_thread = &all_thread[0];
   current_thread->state = RUNNING;
+  current_thread_index=0;
 }
 
 void 
 thread_schedule(void)
 {
-  thread_p t;
+  
+    thread_p t;
+    int start_index = (current_thread_index + 1) % MAX_THREAD; // Calcula el indice de inicio buscar
 
-  /* Find another runnable thread. */
-  next_thread = 0;
-  for (t = all_thread; t < all_thread + MAX_THREAD; t++) {
-    if (t->state == RUNNABLE && t != current_thread) {
-      next_thread = t;
-      break;
-    }
-  }
-
-  if (t >= all_thread + MAX_THREAD && current_thread->state == RUNNABLE) {
-    /* The current thread is the only runnable thread; run it. */
-    next_thread = current_thread;
-  }
-
-  if (next_thread == 0) {
-    printf(2, "thread_schedule: no runnable threads\n");
-    exit();
-  }
-
-  if (current_thread != next_thread) {         /* switch threads?  */
-    next_thread->state = RUNNING;
-    thread_switch();
-  } else {
+    /* Find another runnable thread. */
     next_thread = 0;
-  }
+    int i;
+    for ( i = 0; i < MAX_THREAD; i++) {
+        t = &all_thread[(start_index + i) % MAX_THREAD]; // Recorre el arreglo de forma circular
+        if (t->state == RUNNABLE && t != current_thread) {
+            next_thread = t;
+            current_thread_index = (start_index + i) % MAX_THREAD; // Actualiza current_thread_index
+            break;
+        }
+    }
+
+    if (next_thread == 0 && current_thread->state == RUNNABLE) {
+        /* The current thread is the only runnable thread; run it. */
+        next_thread = current_thread;
+    }
+
+    if (next_thread == 0) {
+        printf(2, "thread_schedule: no runnable threads\n");
+        //exit();
+        next_thread = &all_thread[0];
+        
+    }
+
+    if (current_thread != next_thread) { /* switch threads? */
+        next_thread->state = RUNNING;
+        thread_switch();
+    } else {
+        next_thread = 0;
+    }
 }
 
 void 
