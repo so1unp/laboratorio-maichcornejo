@@ -13,21 +13,26 @@ void handler(int p)
     return;
 }
 
-int main(void) {
+int main(void)
+{
     signal(SIGUSR1, handler);
-    p = (char*) malloc(sizeof(char) * 8192);
+    p = (char *)malloc(sizeof(char) * 8192);
 
     pid_t pid = fork();
 
     // Esperamos la señal SIGUSR1
     pause();
 
-    if (pid == 0) {
+    if (pid == 0)
+    {
         // Agregar aquí el código pedido en el ejercicio.
-
+        a = 7;
+        (*p)++;
         // Esperamos la señal SIGUSR1
         pause();
-    } else {
+    }
+    else
+    {
         // Esperamos la señal SIGUSR1
         pause();
     }

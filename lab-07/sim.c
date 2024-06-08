@@ -24,24 +24,28 @@ typedef struct
     bool presente;
     bool modificado;
     int contadorLRU;
+    int indiceMarco; 
+     
 } EntradaTablaPaginas;
 
 Marco memoriaFisica[NUM_MARCOS];
 EntradaTablaPaginas tablaPaginasProceso[NUM_PROCESOS][NUM_PAGINAS];
+Marco almacenamientoSecundario[NUM_PAGINAS * NUM_PROCESOS];
 
 void inicializarTablasPaginas()
 {
     int i;
-    for ( i = 0; i < NUM_PROCESOS; i++)
+    for (i = 0; i < NUM_PROCESOS; i++)
     {
         int j;
-        for ( j = 0; j < NUM_PAGINAS; j++)
+        for (j = 0; j < NUM_PAGINAS; j++)
         {
             tablaPaginasProceso[i][j].pid = -1;
             tablaPaginasProceso[i][j].pagina = -1;
             tablaPaginasProceso[i][j].presente = false;
             tablaPaginasProceso[i][j].modificado = false;
-            tablaPaginasProceso[i][j].contadorLRU = 0;
+            tablaPaginasProceso[i][j].contadorLRU = -1;
+            tablaPaginasProceso[i][j].indiceMarco = -1;  
         }
     }
 }
@@ -49,10 +53,20 @@ void inicializarTablasPaginas()
 void inicializarMemoriaFisica()
 {
     int i;
-    for ( i = 0; i < NUM_MARCOS; i++)
+    for (i = 0; i < NUM_MARCOS; i++)
     {
         memoriaFisica[i].pid = -1;
         memoriaFisica[i].pagina = -1;
+    }
+}
+
+void inicializarAlmacenamientoSecundario()
+{
+    int i;
+    for (i = 0; i < NUM_PAGINAS * NUM_PROCESOS; i++)
+    {
+        almacenamientoSecundario[i].pid = -1;
+        almacenamientoSecundario[i].pagina = -1;
     }
 }
 
@@ -60,20 +74,13 @@ void imprimirTablaPaginas(int pid)
 {
     printf("Proceso %d: ", pid);
     int i;
-    for ( i = 0; i < NUM_PAGINAS; i++)
+    for (i = 0; i < NUM_PAGINAS; i++)
     {
-        bool encontrado = false;
-        int j;
-        for ( j = 0; j < NUM_MARCOS; j++)
+        if (tablaPaginasProceso[pid - 1][i].presente)
         {
-            if (memoriaFisica[j].pid == pid && memoriaFisica[j].pagina == i)
-            {
-                printf("%d ", i);
-                encontrado = true;
-                break;
-            }
+            printf("%d ", tablaPaginasProceso[pid - 1][i].indiceMarco);  
         }
-        if (!encontrado)
+        else
         {
             printf("- ");
         }
@@ -85,11 +92,11 @@ void imprimirMemoriaFisica()
 {
     printf("Memoria física: ");
     int i;
-    for ( i = 0; i < NUM_MARCOS; i++)
+    for (i = 0; i < NUM_MARCOS; i++)
     {
         if (memoriaFisica[i].pid != -1)
         {
-            printf("%d.%d ", memoriaFisica[i].pid, memoriaFisica[i].pagina);
+            printf("%d.%d ", memoriaFisica[i].pid, memoriaFisica[i].pagina + 1);  
         }
         else
         {
@@ -103,24 +110,30 @@ void imprimirAlmacenamientoSecundario()
 {
     printf("Almacenamiento secundario: ");
     int i;
-    for ( i = 0; i < NUM_PAGINAS; i++)
+    for (i = 0; i < NUM_PAGINAS * NUM_PROCESOS; i++)
     {
-        printf("- ");
+        if (almacenamientoSecundario[i].pid != -1)
+        {
+            printf("%d.%d ", almacenamientoSecundario[i].pid, almacenamientoSecundario[i].pagina + 1);  
+        }
+        else
+        {
+            printf("- ");
+        }
     }
     printf("\n");
 }
 
 void asignarPagina(int pid, int pagina, char *algoritmo) {
-    // Buscar si la página ya está en memoria física
     bool pagina_presente = false;
     int i;
-    for ( i = 0; i < NUM_MARCOS; i++) {
-        if (memoriaFisica[i].pid == pid && memoriaFisica[i].pagina == pagina) {
+    for (i = 0; i < NUM_MARCOS; i++) {
+        if (memoriaFisica[i].pid == pid && memoriaFisica[i].pagina == pagina - 1) {
             pagina_presente = true;
-            // Actualizar contador LRU para esta página
+            
             int j;
-            for ( j = 0; j < NUM_PAGINAS; j++) {
-                if (tablaPaginasProceso[pid - 1][j].pagina == pagina) {
+            for (j = 0; j < NUM_PAGINAS; j++) {
+                if (tablaPaginasProceso[pid - 1][j].pagina == pagina - 1) {
                     tablaPaginasProceso[pid - 1][j].contadorLRU = 0;
                 } else if (tablaPaginasProceso[pid - 1][j].contadorLRU != -1) {
                     tablaPaginasProceso[pid - 1][j].contadorLRU++;
@@ -130,33 +143,52 @@ void asignarPagina(int pid, int pagina, char *algoritmo) {
         }
     }
     
-    // Si la página no está presente, reemplazar la página menos recientemente usada según LRU
     if (!pagina_presente) {
-        // Buscar el índice de la página menos recientemente usada (LRU)
         int indice_lru = -1;
         int max_contador = -1;
-        int i;
-        for ( i = 0; i < NUM_PAGINAS; i++) {
-            if (tablaPaginasProceso[pid - 1][i].contadorLRU > max_contador) {
-                max_contador = tablaPaginasProceso[pid - 1][i].contadorLRU;
+        for (i = 0; i < NUM_MARCOS; i++) {
+            if (memoriaFisica[i].pid == -1) {
+                indice_lru = i;
+                break;
+            } else if (tablaPaginasProceso[memoriaFisica[i].pid - 1][memoriaFisica[i].pagina].contadorLRU > max_contador) {
+                max_contador = tablaPaginasProceso[memoriaFisica[i].pid - 1][memoriaFisica[i].pagina].contadorLRU;
                 indice_lru = i;
             }
         }
-        // Reemplazar la página LRU con la nueva página
-        memoriaFisica[indice_lru].pid = pid;
-        memoriaFisica[indice_lru].pagina = pagina;
-        // Actualizar contador LRU para la nueva página
         
-        for ( i = 0; i < NUM_PAGINAS; i++) {
+        int pid_victima = memoriaFisica[indice_lru].pid;
+        int pagina_victima = memoriaFisica[indice_lru].pagina;
+        
+        if (pid_victima != -1) {
+            tablaPaginasProceso[pid_victima - 1][pagina_victima].presente = false;
+
+            //manda la pagina victima al almacenamiento
+            int j;
+            for (j = 0; j < NUM_PAGINAS * NUM_PROCESOS; j++) {
+                if (almacenamientoSecundario[j].pid == -1) {
+                    almacenamientoSecundario[j].pid = pid_victima;
+                    almacenamientoSecundario[j].pagina = pagina_victima;
+                    break;
+                }
+            }
+        }
+        
+        memoriaFisica[indice_lru].pid = pid;
+        memoriaFisica[indice_lru].pagina = pagina - 1;
+        
+        tablaPaginasProceso[pid - 1][pagina - 1].pid = pid;
+        tablaPaginasProceso[pid - 1][pagina - 1].pagina = pagina - 1;
+        tablaPaginasProceso[pid - 1][pagina - 1].presente = true;
+        tablaPaginasProceso[pid - 1][pagina - 1].contadorLRU = 0;
+        tablaPaginasProceso[pid - 1][pagina - 1].indiceMarco = indice_lru; 
+        
+        for (i = 0; i < NUM_PAGINAS; i++) {
             if (tablaPaginasProceso[pid - 1][i].contadorLRU != -1) {
                 tablaPaginasProceso[pid - 1][i].contadorLRU++;
             }
         }
-        tablaPaginasProceso[pid - 1][indice_lru].contadorLRU = 0;
     }
 }
-
-
 
 int main(int argc, char *argv[])
 {
@@ -168,6 +200,7 @@ int main(int argc, char *argv[])
 
     inicializarTablasPaginas();
     inicializarMemoriaFisica();
+    inicializarAlmacenamientoSecundario();
 
     char *algoritmo = argv[1];
     int pid, pagina;
@@ -176,6 +209,7 @@ int main(int argc, char *argv[])
     {
         asignarPagina(pid, pagina, algoritmo);
     }
+
     int i;
     for (i = 1; i <= NUM_PROCESOS; i++)
     {
