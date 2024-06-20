@@ -29,7 +29,7 @@ typedef struct
 } EntradaTablaPaginas;
 
 Marco memoriaFisica[NUM_MARCOS];
-EntradaTablaPaginas tablaPaginasProceso[NUM_PROCESOS][NUM_PAGINAS];la
+EntradaTablaPaginas tablaPaginasProceso[NUM_PROCESOS][NUM_PAGINAS];
 Marco almacenamientoSecundario[NUM_PAGINAS * NUM_PROCESOS];
 
 void inicializarTablasPaginas()
